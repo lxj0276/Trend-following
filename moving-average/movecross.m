@@ -31,6 +31,7 @@ end
 % generate raw signals
 signals=signalgen(mas,mal,macds,macdl,macdm,dmas,dmal,dmam,trixn,trixm,close,skip,select);
 
+
 % refine signals
 cumsig=sum(signals,2);
 finalsignals=(cumsig>=1)-(cumsig<=-1);
@@ -44,6 +45,8 @@ for i=2:(nrow-skip)
     states(diffcheck)=finalsignals(i,diffcheck);
 end
 
+positions=calc_positions(finalsignals,type);
+
 close=close((skip+1):end);
 Ktrdtime=time((skip+1):end);
 Ktrddate=date((skip+1):end);
@@ -51,7 +54,8 @@ Ksignal=finalsignals;
 Ktrdprc=zeros(length(close),1);
 Ktrdprc(finalsignals~=0)=close(finalsignals~=0);
 
-[returns,points,positions]=calc_earnings(finalsignals,close,transactioncost,type);
+[returns,points]=calc_earnings(positions,finalsignals,close,transactioncost);
+
 if type
     rname='lret';
     pname='lpts';

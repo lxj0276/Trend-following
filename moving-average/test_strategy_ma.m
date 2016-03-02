@@ -3,7 +3,7 @@ data=csvread('D:\Works\collected data\期货分钟数据\K_if_min.csv',1,0);
 
 %%
 transactioncost=0/10000;
-paras=[5,20,5,20,10,5,20,10,5,20].*270;
+paras=[5,20,2,25,20,5,20,10,5,20].*270;
 type=0; % trade type long only, short only and long short
 skip=1*270;
 select=[0,0,0,1];
@@ -13,18 +13,19 @@ toc
 %%
 tableK(find(table2array(tableK(:,1))==20110607),:)
 
+
 %%
 [maxdds,sharps,annrets,annvols,trdnums,winrates,singlepts,singlerets,totpts,totrets,winlosses]=Kindicators(tableK,type)
 
 %%
 transactioncost=0;
 type=0;
-select=[0,1,0,0];
+select=[0,0,1,0];
 skip=270;
-start1=10;
-start2=50;
-start3=30;
-step1=4;
+start1=2;
+start2=20;
+start3=20;
+step1=2;
 step2=5;
 step3=5;
 num1=20;
@@ -60,9 +61,13 @@ for i=start1:step1:num1
             p1s(count)=i;
             p2s(count)=j;
             p3s(count)=k;
-            paras=[5,20,p1,p2,p3,5,20,10,5,20].*270;
-            tableK=movecross(data,paras,transactioncost,type,skip,select);
-            [maxdds(count),sharps(count),annrets(count),annvols(count),trdnums(count),winrates(count),singlepts(count),singlerets(count),totpts(count),totrets(count),winlosses(count)]=Kindicators(tableK,type);
+            paras=[5,20,2,25,20,p1,p2,p3,5,20].*270;
+            if p1==p2
+                [maxdds(count),sharps(count),annrets(count),annvols(count),trdnums(count),winrates(count),singlepts(count),singlerets(count),totpts(count),totrets(count),winlosses(count)]=zeros(1,11);
+            else
+                tableK=movecross(data,paras,transactioncost,type,skip,select);
+                [maxdds(count),sharps(count),annrets(count),annvols(count),trdnums(count),winrates(count),singlepts(count),singlerets(count),totpts(count),totrets(count),winlosses(count)]=Kindicators(tableK,type);
+            end
             count=count+1;
         end
     end
@@ -72,3 +77,5 @@ toc
   %%
 results=array2table([p1s,p2s,p3s,maxdds,sharps,annrets,annvols,trdnums,winrates,singlepts,singlerets,totpts,totrets,winlosses],...
     'VariableName',{'p1s','p2s','p3s','maxdd','sharp','annret','annvol','trdnum','winrate','singlept','singleret','totpt','totret','winloss'});
+
+results(find(table2array(results(:,12))==max(table2array(results(:,12)))),:)

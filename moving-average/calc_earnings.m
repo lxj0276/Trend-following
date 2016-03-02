@@ -1,29 +1,41 @@
-function[returns,points,positions]=calc_earnings(signals,clsprc,tscost,type)
 
-N=length(clsprc);
-
-positions=zeros([N,1]);
+function[returns,points]=calc_earnings(positions,signals,clsprc,tscost)
 sigpos=find(signals~=0);
-firstsig=signals(sigpos(1));
-count=(firstsig==-1);
-len=length(sigpos);
-for i=1:len
-    if i==len
-        End=N;
-    else
-        End=sigpos(i+1);
-    end
-    positions((sigpos(i)+1):End)=(-1)^count;
-    count=count+1;
-end
-
-positions=(positions+type)/(1+(type~=0));
 points=(clsprc(2:end)-clsprc(1:(end-1))).*positions(2:end);
 returns=points./clsprc(1:(end-1));
 points=[0;points];
 points(sigpos)=points(sigpos)-tscost*clsprc(sigpos);
 returns=[0;returns];
 returns(sigpos)=returns(sigpos)-tscost;
+
+
+%%
+% function[returns,points,positions]=calc_earnings(signals,clsprc,tscost,type)
+% 
+% N=length(clsprc);
+% 
+% positions=zeros([N,1]);
+% sigpos=find(signals~=0);
+% firstsig=signals(sigpos(1));
+% count=(firstsig==-1);
+% len=length(sigpos);
+% for i=1:len
+%     if i==len
+%         End=N;
+%     else
+%         End=sigpos(i+1);
+%     end
+%     positions((sigpos(i)+1):End)=(-1)^count;
+%     count=count+1;
+% end
+% 
+% positions=(positions+type)/(1+(type~=0));
+% points=(clsprc(2:end)-clsprc(1:(end-1))).*positions(2:end);
+% returns=points./clsprc(1:(end-1));
+% points=[0;points];
+% points(sigpos)=points(sigpos)-tscost*clsprc(sigpos);
+% returns=[0;returns];
+% returns(sigpos)=returns(sigpos)-tscost;
 
 %%
 % long=zeros([N,1]);
