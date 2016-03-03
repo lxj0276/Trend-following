@@ -34,7 +34,7 @@ end
 
 signals=signals(skip:(len-1),:);
 
-% deal with continuous identical signals ex.1 1 1...
+%deal with continuous identical signals ex.1 1 1...
 states=signals(1,:);
 for i=2:(len-skip)
     samecheck=(states==signals(i,:) & signals(i,:));
