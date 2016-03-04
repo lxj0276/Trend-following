@@ -66,7 +66,7 @@ reachBS=0;
 
 Ktrdtime=time;
 Ktrddate=date;
-Ktrdprc=close;
+Ktrdprc=zeros(nrow,1);
 Ksignals=zeros(nrow,1);
 Kpositions=zeros(nrow,1);
 Kpoints=zeros(nrow,1);
@@ -84,10 +84,10 @@ for minuteK=days(2):nrow
         SEsellprice=SE(daycount-1);
         SBsellprice=SB(daycount-1);
     end
-    if pass || zeroprc(minuteK)  % set pass =1 only when a round trade is done!!!
+    if pass  % set pass =1 only when a round trade is done!!!
         continue
     end
-    if currenthold==0 %no position
+    if currenthold==0 && (~zeroprc(minuteK))%no position
         if reachSS==0 && reachBS==0
             % update holding positions first
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol);
@@ -229,4 +229,5 @@ for minuteK=days(2):nrow
         end
     end
 end
+Ktrdprc(Ksignals~=0)=clsoe(Ksignals~=0);
 tableK=array2table([Ktrddate Ktrdtime Ktrdprc Ksignals Kpositions Kpoints Kreturns]);

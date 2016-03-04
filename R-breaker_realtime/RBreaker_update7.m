@@ -91,10 +91,10 @@ for minuteK=days(2):nrow
         SEsellprice=SE(daycount-1);
         SBsellprice=SB(daycount-1);
     end
-    if pass || zeroprc(minuteK)  % set pass =1 only when a round trade is done!!!
+    if pass  % set pass =1 only when a round trade is done!!!
         continue
     end
-    if currenthold==0 %no position
+    if currenthold==0 && (~zeroprc(minuteK)) %no position
         if reachSS==0 && reachBS==0
             % update holding positions first
             BBbuy=(high(minuteK)-BB(daycount-1)>=-tol);

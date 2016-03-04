@@ -38,7 +38,7 @@ tableK1=array2table([Ktrddate Ktrdtime Ktrdprc Ksignal positions points returns]
 [maxdds1,sharps1,annrets1,annvols1,trdnums1,winrates1,singlepts1,singlerets1,totpts1,totrets1,winlosses1]=RBindicators(tableK1)
 
 %%
-tableK(find(table2array(tableK(:,1))==20110419),:)
+tableK(find(table2array(tableK(:,1))==20100505),:)
 %tableK1(find(table2array(tableK1(:,1))==20110419),:)
 
 
