@@ -10,20 +10,21 @@ p1=paras(1);
 p2=paras(2);
 p3=paras(3);
 
+hzeroidx=(data(:,4)==0);
+lzeroidx=(data(:,5)==0);
+czeroidx=(data(:,6)==0);
+zeroprc=hzeroidx|lzeroidx|czeroidx;
+zeroidx=find(zeroprc);
+for i=1:length(zeroidx)
+    data(zeroidx(i),4:6)=data((zeroidx(i)-1),4:6);
+end
+
 date=data(:,1);
 time=data(:,2);
 open=data(:,3);
 high=data(:,4);
 low=data(:,5);
 close=data(:,6);
-
-for dum_i=1:nrow
-   if any([high(dum_i) low(dum_i) close(dum_i)]==0)
-       high(dum_i)=high(dum_i-1);
-       low(dum_i)=low(dum_i-1);
-       close(dum_i)=close(dum_i-1);
-   end    
-end
 
 % calculate the high,low and close of previos day
 newday=[1;date(1:(nrow-1))~=date(2:nrow)];
@@ -154,9 +155,10 @@ for minuteK=days(2):nrow
                 end
             end
         elseif reachSS==0 && reachBS==1
-            buy=(high(minuteK)-BE(daycount-1)>=-tol)&&(trdnum==0);
+            BBbuy=(high(minuteK)-BB(daycount-1)>=-tol)&&(trdnum>0);
+            buy=((high(minuteK)-BE(daycount-1)>=-tol)&&(trdnum==0))|| BBbuy;
             sell=(low(minuteK)-SB(daycount-1)<=tol);            
-            buyprice=max(open(minuteK),BE(daycount-1));
+            buyprice=max(max(open(minuteK),BE(daycount-1)),BB(daycount-1)*BBbuy);
             sellprice=min(open(minuteK),SB(daycount-1));                       
             if buy+sell==0  % hold on the current reach state
                 if time(minuteK)==endtime
@@ -215,10 +217,11 @@ for minuteK=days(2):nrow
                 end
             end
         elseif reachSS==1 && reachBS==0
+            SBsell=(low(minuteK)-SB(daycount-1)<=tol)&&(trdnum>0);
             buy=(high(minuteK)-BB(daycount-1)>=-tol);
-            sell=(low(minuteK)-SE(daycount-1)<=tol)&&(trdnum==0);            
+            sell=((low(minuteK)-SE(daycount-1)<=tol)&&(trdnum==0)) || SBsell;            
             buyprice=max(open(minuteK),BB(daycount-1));
-            sellprice=min(open(minuteK),SE(daycount-1));            
+            sellprice=min(min(open(minuteK),SE(daycount-1)),SB(daycount-1)/SBsell);            
             if buy+sell==0  % hold on the current reach state
                 if time(minuteK)==endtime
                     daycount=daycount+1;
@@ -304,6 +307,10 @@ for minuteK=days(2):nrow
                 pass=1;
                 continue
             end
+            if time(minuteK)==endtime
+                daycount=daycount+1;
+                trdnum=0;
+            end
             continue
         elseif time(minuteK)==endtime   %endtime
             price=(buyprice*(1-overnight)+close(days(daycount)-1)*overnight);
@@ -348,6 +355,10 @@ for minuteK=days(2):nrow
                 trdnum=0;
                 pass=1;
                 continue
+            end
+            if time(minuteK)==endtime
+                daycount=daycount+1;
+                trdnum=0;
             end
             continue
         elseif time(minuteK)==endtime  %endtime

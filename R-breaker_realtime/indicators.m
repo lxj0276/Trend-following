@@ -6,11 +6,6 @@ Kreturns=table2array(tableK(:,6));
 Knetval=cumprod(1+Kreturns);
 len=length(Knetval);
 
-Dpositions=table2array(tableD(:,2));
-Dpoints=table2array(tableD(:,3));
-Dreturns=table2array(tableD(:,4));
-Dnetval=cumprod(1+Dreturns);
-
 if overnight
     idx=find(Kpositions~=0);
     lenidx=length(idx);
@@ -50,6 +45,10 @@ if overnight
        ovn=ovn+ticker;
     end
 else
+    Dpositions=table2array(tableD(:,2));
+    Dpoints=table2array(tableD(:,3));
+    Dreturns=table2array(tableD(:,4));
+    Dnetval=cumprod(1+Dreturns);
     rets=sum(Dreturns);
     win=sum(Dpoints(Dpoints>0));
     loss=sum(Dpoints(Dpoints<0));

@@ -5,8 +5,6 @@ function[positions,signals,prices]=RBreaker_signals(data,paras,breakpct,tol,maxt
 [nrow,ncol]=size(data);
 tick=0.2;
 endtime=151500;
-positions=zeros(nrow,1);
-signals=zeros(nrow,1);
 
 p1=paras(1);
 p2=paras(2);
@@ -27,7 +25,6 @@ open=data(:,3);
 high=data(:,4);
 low=data(:,5);
 close=data(:,6);
-prices=close;
 
 % calculate the high,low and close of previos day
 newday=[1;date(1:(nrow-1))~=date(2:nrow)];
@@ -67,6 +64,10 @@ currenthold=0;
 reachSS=0;
 reachBS=0;
 
+signals=zeros(nrow,1);
+positions=zeros(nrow,1);
+prices=close;
+
 daycount=2;
 trdnum=0;
 for minuteK=days(2):nrow
@@ -89,127 +90,49 @@ for minuteK=days(2):nrow
             SBsell=(close(minuteK)-SB(daycount-1)<=tol); 
             BEbuy=0;
             SEsell=0;
-            BBbuyprice=max(open(minuteK),BB(daycount-1));
-            SBsellprice=min(open(minuteK),SB(daycount-1));   
+            BBbuyprice=BB(daycount-1);
+            SBsellprice=SB(daycount-1);   
             BEbuyprice=0;
             SEsellprice=0;
             if BBbuy+SBsell==0  % update reach states, and NO change in currenthold
                 reachSS=(close(minuteK)-SS(daycount-1)>=-tol);
                 reachBS=(close(minuteK)-BS(daycount-1)<=tol);
-%                 if time(minuteK)==endtime
-%                     daycount=daycount+1;
-%                     trdnum=0;
-%                 end
-%                 continue
-            elseif BBbuy+SBsell==2  % worst condition, break with loss, very not likely to happen
-                positions(minuteK)=-2;
-                signals(minuteK)=-2;
-                trdnum=trdnum+1;
-                if trdnum==maxtrdnum
-                    daycount=daycount+1;
-                    trdnum=0;
-                    pass=1;
-                    continue
-                end
-%                 if time(minuteK)==endtime
-%                     daycount=daycount+1;
-%                     trdnum=0;
-%                 end
-%                 continue
             else  % either buy or sell, update the holding position, transaction fee of daily returns/points will be counted at last
                 currenthold=BBbuy-SBsell;
-                signals(minuteK)=currenthold;
-%                 if time(minuteK)==endtime
-%                     daycount=daycount+1;
-%                     trdnum=0;
-%                 end
-%                 continue                
+                signals(minuteK)=currenthold;            
             end
         elseif reachSS==0 && reachBS==1
             BEbuy=(close(minuteK)-BE(daycount-1)>=-tol) && (trdnum==0);
             SBsell=(close(minuteK)-SB(daycount-1)<=tol);      
-            BBbuy=(high(minuteK)-BB(daycount-1)>=-tol)&& (trdnum>0);
+            BBbuy=(close(minuteK)-BB(daycount-1)>=-tol)&& (trdnum>0);
             SEsell=0;
-            BEbuyprice=max(open(minuteK),BE(daycount-1));
-            SBsellprice=min(open(minuteK),SB(daycount-1));      
-            BBbuyprice=max(open(minuteK),BB(daycount-1));
+            BEbuyprice=BE(daycount-1);
+            SBsellprice=SB(daycount-1);      
+            BBbuyprice=BB(daycount-1);
             SEsellprice=0;
-            if BEbuy+SBsell+BBbuy==0  % hold on the current reach state
-                if time(minuteK)==endtime
-                    daycount=daycount+1;
-                    trdnum=0;
-                end
-                continue
-            elseif BEbuy+SBsell+BBbuy==2  % break with loss
-                positions(minuteK)=-2;
-                signals(minuteK)=-2;
-                trdnum=trdnum+1;
-                if trdnum==maxtrdnum
-                    daycount=daycount+1;
-                    trdnum=0;
-                    pass=1;
-                    continue
-                end
-                if time(minuteK)==endtime
-                    daycount=daycount+1;
-                    trdnum=0;
-                end
-                continue
-            else %either buy or sell, update the holding position
+            if BEbuy+SBsell+BBbuy~=0 %either buy or sell, update the holding position
                 currenthold=BEbuy+BBbuy-SBsell;
                 signals(minuteK)=currenthold;
-                if time(minuteK)==endtime
-                    daycount=daycount+1;
-                    trdnum=0;
-                end
-                continue
             end
         elseif reachSS==1 && reachBS==0
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol);
             SEsell=(close(minuteK)-SE(daycount-1)<=tol)&&(trdnum==0);   
             BEbuy=0;
-            SBsell=(low(minuteK)-SB(daycount-1)<=tol)&&(trdnum>0);
-            BBbuyprice=max(open(minuteK),BB(daycount-1));
-            SEsellprice=min(open(minuteK),SE(daycount-1));     
+            SBsell=(close(minuteK)-SB(daycount-1)<=tol)&&(trdnum>0);
+            BBbuyprice=BB(daycount-1);
+            SEsellprice=SE(daycount-1);     
             BEbuyprice=0;
-            SBsellprice=min(open(minuteK),SB(daycount-1));
-            if BBbuy+SEsell+SBsell==0  % hold on the current reach state
-                if time(minuteK)==endtime
-                    daycount=daycount+1;
-                    trdnum=0;
-                end
-                continue
-            elseif BBbuy+SEsell+SBsell==2  % worst condition, break the day
-                positions(minuteK)=-2;
-                signals(minuteK)=-2;
-                trdnum=trdnum+1;
-                if trdnum==maxtrdnum
-                    daycount=daycount+1;
-                    trdnum=0;
-                    pass=1;
-                    continue
-                end
-                if time(minuteK)==endtime
-                    daycount=daycount+1;
-                    trdnum=0;
-                end
-                continue
-            else %either buy or sell, update the holding position
+            SBsellprice=SB(daycount-1);
+            if BBbuy+SEsell+SBsell~=0 %either buy or sell, update the holding position
                 currenthold=BBbuy-SEsell-SBsell;
-                signals(minuteK)=currenthold;                
-                if time(minuteK)==endtime
-                    daycount=daycount+1;
-                    trdnum=0;
-                end
-                continue                
+                signals(minuteK)=currenthold;                        
             end
-        else    % reach both SS and BS, break without any trade
-            if time(minuteK)==endtime
-                daycount=daycount+1;
-                trdnum=0;
-            end
-            continue
+        end    % reach both SS and BS, break without any trade
+        if time(minuteK)==endtime
+            daycount=daycount+1;
+            trdnum=0;
         end
+        continue
     elseif currenthold==1 %long position, hold the position till a break or endtime    
         positions(minuteK)=currenthold;
         buyprice=(BBbuy*BBbuyprice+BEbuy*BEbuyprice);
@@ -223,6 +146,10 @@ for minuteK=days(2):nrow
                 trdnum=0;
                 pass=1;
                 continue
+            end
+            if time(minuteK)==endtime
+                daycount=daycount+1;
+                trdnum=0;
             end
             continue
         elseif time(minuteK)==endtime   %endtime
@@ -245,6 +172,10 @@ for minuteK=days(2):nrow
                 trdnum=0;
                 pass=1;
                 continue
+            end
+            if time(minuteK)==endtime
+                daycount=daycount+1;
+                trdnum=0;
             end
             continue
         elseif time(minuteK)==endtime   %endtime             
