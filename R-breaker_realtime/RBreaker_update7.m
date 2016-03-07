@@ -282,7 +282,7 @@ for minuteK=days(2):nrow
             Kpoints(minuteK-days(2)+1)=close(minuteK)-close(minuteK-1);
             continue
         end
-    else %short position, hold the position till a break or endtime
+    elseif currenthold==-1 %short position, hold the position till a break or endtime
         sellprice=(SEsell*SEsellprice+SBsell*SBsellprice);
         breakprc=tickround(sellprice*(1+breakpct),tick);
         if (high(minuteK)-breakprc>=-tol)  %break
