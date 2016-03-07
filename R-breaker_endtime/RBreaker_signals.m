@@ -10,13 +10,14 @@ p1=paras(1);
 p2=paras(2);
 p3=paras(3);
 
+ozeroidx=(data(:,3)==0);
 hzeroidx=(data(:,4)==0);
 lzeroidx=(data(:,5)==0);
 czeroidx=(data(:,6)==0);
-zeroprc=hzeroidx|lzeroidx|czeroidx;
+zeroprc=ozeroidx|hzeroidx|lzeroidx|czeroidx;
 zeroidx=find(zeroprc);
 for i=1:length(zeroidx)
-   data(zeroidx(i),4:6)=data((zeroidx(i)-1),4:6); 
+   data(zeroidx(i),3:6)=data((zeroidx(i)-1),3:6); 
 end
 
 date=data(:,1);
@@ -83,8 +84,8 @@ for minuteK=days(2):nrow
     if pass  % set pass =1 only when a round trade is done!!!
         continue
     end
-    if currenthold==0 && (~zeroprc(minuteK))%no position
-        if reachSS==0 && reachBS==0
+    if currenthold==0 %no position
+        if reachSS==0 && reachBS==0 && (~zeroprc(minuteK))
             % update holding positions first
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol);
             SBsell=(close(minuteK)-SB(daycount-1)<=tol); 
@@ -99,9 +100,10 @@ for minuteK=days(2):nrow
                 reachBS=(close(minuteK)-BS(daycount-1)<=tol);
             else  % either buy or sell, update the holding position, transaction fee of daily returns/points will be counted at last
                 currenthold=BBbuy-SBsell;
-                signals(minuteK)=currenthold;            
+                signals(minuteK)=currenthold;      
+                prices(minuteK)=BBbuy*BBbuyprice+SBsell*SBsellprice;
             end
-        elseif reachSS==0 && reachBS==1
+        elseif reachSS==0 && reachBS==1 && (~zeroprc(minuteK))
             BEbuy=(close(minuteK)-BE(daycount-1)>=-tol) && (trdnum==0);
             SBsell=(close(minuteK)-SB(daycount-1)<=tol);      
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol)&& (trdnum>0);
@@ -113,8 +115,9 @@ for minuteK=days(2):nrow
             if BEbuy+SBsell+BBbuy~=0 %either buy or sell, update the holding position
                 currenthold=BEbuy+BBbuy-SBsell;
                 signals(minuteK)=currenthold;
+                prices(minuteK)=BBbuy*BBbuyprice+BEbuy*BEbuyprice+SBsell*SBsellprice;
             end
-        elseif reachSS==1 && reachBS==0
+        elseif reachSS==1 && reachBS==0 && (~zeroprc(minuteK))
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol);
             SEsell=(close(minuteK)-SE(daycount-1)<=tol)&&(trdnum==0);   
             BEbuy=0;
@@ -125,7 +128,8 @@ for minuteK=days(2):nrow
             SBsellprice=SB(daycount-1);
             if BBbuy+SEsell+SBsell~=0 %either buy or sell, update the holding position
                 currenthold=BBbuy-SEsell-SBsell;
-                signals(minuteK)=currenthold;                        
+                signals(minuteK)=currenthold;        
+                prices(minuteK)=BBbuy*BBbuyprice+SEsell*SEsellprice+SBsell*SBsellprice;
             end
         end    % reach both SS and BS, break without any trade
         if time(minuteK)==endtime
@@ -137,8 +141,9 @@ for minuteK=days(2):nrow
         positions(minuteK)=currenthold;
         buyprice=(BBbuy*BBbuyprice+BEbuy*BEbuyprice);
         breakprc=tickround(buyprice*(1-breakpct),tick);        
-        if (close(minuteK)-breakprc<=tol)   %break   
+        if (close(minuteK)-breakprc<=tol) && (~zeroprc(minuteK))   %break   
             signals(minuteK)=-currenthold;
+            prices(minuteK)=breakprc;
             currenthold=0;               
             trdnum=trdnum+1;
             if trdnum==maxtrdnum
@@ -159,12 +164,13 @@ for minuteK=days(2):nrow
         else % keep holding
             continue
         end
-    else %short position, hold the position till a break or endtime 
+    elseif currenthold==-1 %short position, hold the position till a break or endtime 
         positions(minuteK)=currenthold;
         sellprice=(SEsell*SEsellprice+SBsell*SBsellprice);
         breakprc=tickround(sellprice*(1+breakpct),tick);        
-        if (close(minuteK)-breakprc>=-tol)  %break   
+        if (close(minuteK)-breakprc>=-tol) && (~zeroprc(minuteK))  %break   
             signals(minuteK)=-currenthold;
+            prices(minuteK)=breakprc;
             currenthold=0;       
             trdnum=trdnum+1;
             if trdnum==maxtrdnum

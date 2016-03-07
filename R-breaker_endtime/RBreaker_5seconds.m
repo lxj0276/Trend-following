@@ -10,18 +10,18 @@ p1=paras(1);
 p2=paras(2);
 p3=paras(3);
 
+ozeroidx=(data(:,3)==0);
 hzeroidx=(data(:,4)==0);
 lzeroidx=(data(:,5)==0);
 czeroidx=(data(:,6)==0);
-zeroprc=hzeroidx|lzeroidx|czeroidx;
+zeroprc=ozeroidx|hzeroidx|lzeroidx|czeroidx;
 zeroidx=find(zeroprc);
 for i=1:length(zeroidx)
-   data(zeroidx(i),4:6)=data((zeroidx(i)-1),4:6); 
+   data(zeroidx(i),3:6)=data((zeroidx(i)-1),3:6); 
 end
 
 date=data(:,1);
 time=data(:,2);
-open=data(:,3);
 high=data(:,4);
 low=data(:,5);
 close=data(:,6);
@@ -87,8 +87,8 @@ for minuteK=days(2):nrow
     if pass  % set pass =1 only when a round trade is done!!!
         continue
     end
-    if currenthold==0 && (~zeroprc(minuteK))%no position
-        if reachSS==0 && reachBS==0
+    if currenthold==0 %no position
+        if reachSS==0 && reachBS==0 && (~zeroprc(minuteK))
             % update holding positions first
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol);
             SBsell=(close(minuteK)-SB(daycount-1)<=tol); 
@@ -104,6 +104,7 @@ for minuteK=days(2):nrow
             else  % either buy or sell, update the holding position, transaction fee of daily returns/points will be counted at last
                 currenthold=BBbuy-SBsell;
                 Ksignals(minuteK)=currenthold;
+                Ktrdprc(minuteK)=BBbuy*BBbuyprice+SBsell*SBsellprice;
                 Kreturns(minuteK)=-transactioncost;
                 if BBbuy
                     Kpoints(minuteK)=-BBbuyprice*transactioncost;                  
@@ -111,7 +112,7 @@ for minuteK=days(2):nrow
                     Kpoints(minuteK)=-SBsellprice*transactioncost;                                  
                 end
             end
-        elseif reachSS==0 && reachBS==1
+        elseif reachSS==0 && reachBS==1 && (~zeroprc(minuteK))
             BEbuy=(close(minuteK)-BE(daycount-1)>=-tol) && (trdnum==0);
             SBsell=(close(minuteK)-SB(daycount-1)<=tol);      
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol) && (trdnum>0);
@@ -123,6 +124,7 @@ for minuteK=days(2):nrow
             if BEbuy+SBsell+BBbuy~=0 %either buy or sell, update the holding position
                 currenthold=BEbuy+BBbuy-SBsell;
                 Ksignals(minuteK)=currenthold;
+                Ktrdprc(minuteK)=BBbuy*BBbuyprice+BEbuy*BEbuyprice+SBsell*SBsellprice;
                 Kreturns(minuteK)=-transactioncost;
                 if BEbuy
                     Kpoints(minuteK)=-BEbuyprice*transactioncost;
@@ -132,7 +134,7 @@ for minuteK=days(2):nrow
                     Kpoints(minuteK)=-SBsellprice*transactioncost;
                 end
             end
-        elseif reachSS==1 && reachBS==0
+        elseif reachSS==1 && reachBS==0 && (~zeroprc(minuteK))
             BBbuy=(close(minuteK)-BB(daycount-1)>=-tol);
             SEsell=(close(minuteK)-SE(daycount-1)<=tol)&&(trdnum==0);   
             BEbuy=0;
@@ -144,6 +146,7 @@ for minuteK=days(2):nrow
             if BBbuy+SEsell+SBsell~=0 %either buy or sell, update the holding position
                 currenthold=BBbuy-SEsell-SBsell;
                 Ksignals(minuteK)=currenthold;
+                Ktrdprc(minuteK)=BBbuy*BBbuyprice+SEsell*SEsellprice+SBsell*SBsellprice;
                 Kreturns(minuteK)=-transactioncost;
                 if BBbuy
                     Kpoints(minuteK)=-BBbuyprice*transactioncost;
@@ -163,12 +166,11 @@ for minuteK=days(2):nrow
         Kpositions(minuteK)=currenthold;
         buyprice=(BBbuy*BBbuyprice+BEbuy*BEbuyprice);
         breakprc=tickround(buyprice*(1-breakpct),tick);        
-        if (close(minuteK)-breakprc<=tol)   %break
-            ind=open(minuteK)<breakprc;
-            breakprc=ind*open(minuteK)+(1-ind)*breakprc;                     
+        if (close(minuteK)-breakprc<=tol) && (~zeroprc(minuteK))  %break                    
             Kreturns(minuteK)=(breakprc/close(minuteK-1)-1)-transactioncost;
             Kpoints(minuteK)=(breakprc-close(minuteK-1))-breakprc*transactioncost;
             Ksignals(minuteK)=-currenthold;     
+            Ktrdprc(minuteK)=breakprc;
             currenthold=0;                     
             trdnum=trdnum+1;
             if trdnum==maxtrdnum
@@ -193,16 +195,15 @@ for minuteK=days(2):nrow
             Kpoints(minuteK)=close(minuteK)-close(minuteK-1); 
             continue
         end
-    else %short position, hold the position till a break or endtime
+    elseif currenthold==-1 %short position, hold the position till a break or endtime
         Kpositions(minuteK)=currenthold;
         sellprice=(SEsell*SEsellprice+SBsell*SBsellprice);
         breakprc=tickround(sellprice*(1+breakpct),tick);        
-        if (close(minuteK)-breakprc>=-tol)  %break
-            ind=open(minuteK)>breakprc;
-            breakprc=ind*open(minuteK)+(1-ind)*breakprc;          
+        if (close(minuteK)-breakprc>=-tol) && (~zeroprc(minuteK)) %break        
             Kreturns(minuteK)=(-breakprc/close(minuteK-1)+1)-transactioncost;
             Kpoints(minuteK)=(close(minuteK-1)-breakprc)-breakprc*transactioncost;
             Ksignals(minuteK)=-currenthold; 
+            Ktrdprc(minuteK)=breakprc;
             currenthold=0;      
             trdnum=trdnum+1;
             if trdnum==maxtrdnum
@@ -229,5 +230,4 @@ for minuteK=days(2):nrow
         end
     end
 end
-Ktrdprc(Ksignals~=0)=clsoe(Ksignals~=0);
 tableK=array2table([Ktrddate Ktrdtime Ktrdprc Ksignals Kpositions Kpoints Kreturns]);
