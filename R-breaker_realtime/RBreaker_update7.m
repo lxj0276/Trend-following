@@ -10,13 +10,14 @@ p1=paras(1);
 p2=paras(2);
 p3=paras(3);
 
+ozeroidx=(data(:,3)==0);
 hzeroidx=(data(:,4)==0);
 lzeroidx=(data(:,5)==0);
 czeroidx=(data(:,6)==0);
-zeroprc=hzeroidx|lzeroidx|czeroidx;
+zeroprc=ozeroidx|hzeroidx|lzeroidx|czeroidx;
 zeroidx=find(zeroprc);
 for i=1:length(zeroidx)
-    data(zeroidx(i),4:6)=data((zeroidx(i)-1),4:6);
+    data(zeroidx(i),3:6)=data((zeroidx(i)-1),3:6);
 end
 
 date=data(:,1);
@@ -91,11 +92,11 @@ for minuteK=days(2):nrow
         SEsellprice=SE(daycount-1);
         SBsellprice=SB(daycount-1);
     end
-    if pass  % set pass =1 only when a round trade is done!!!
+    if pass % set pass =1 only when a round trade is done!!!
         continue
     end
-    if currenthold==0 && (~zeroprc(minuteK)) %no position
-        if reachSS==0 && reachBS==0
+    if currenthold==0 %no position
+        if reachSS==0 && reachBS==0 && (~zeroprc(minuteK))
             % update holding positions first
             BBbuy=(high(minuteK)-BB(daycount-1)>=-tol);
             SBsell=(low(minuteK)-SB(daycount-1)<=tol);
@@ -123,7 +124,7 @@ for minuteK=days(2):nrow
                     pass=1;
                     continue
                 end
-            else  % either buy or sell, update the holding position, transaction fee of daily returns/points will be counted at last
+            elseif (~zeroprc(minuteK))  % either buy or sell, update the holding position, transaction fee of daily returns/points will be counted at last
                 currenthold=BBbuy-SBsell;
                 direction(daycount-1)=currenthold;
                 Kposition(minuteK-days(2)+1)=currenthold;
@@ -139,7 +140,7 @@ for minuteK=days(2):nrow
                     Ktrdprc(minuteK-days(2)+1)=openprice;
                 end
             end
-        elseif reachSS==0 && reachBS==1
+        elseif reachSS==0 && reachBS==1 && (~zeroprc(minuteK))
             BEbuy=((high(minuteK)-BE(daycount-1)>=-tol) && (trdnum==0));
             SBsell=(low(minuteK)-SB(daycount-1)<=tol);
             BBbuy=(high(minuteK)-BB(daycount-1)>=-tol)&& (trdnum>0);
@@ -163,7 +164,7 @@ for minuteK=days(2):nrow
                     pass=1;
                     continue
                 end
-            elseif BEbuy+SBsell+BBbuy~=0%either buy or sell, update the holding position
+            elseif BEbuy+SBsell+BBbuy~=0 %either buy or sell, update the holding position
                 currenthold=BEbuy+BBbuy-SBsell;
                 direction(daycount-1)=currenthold;
                 Kposition(minuteK-days(2)+1)=currenthold;
@@ -184,7 +185,7 @@ for minuteK=days(2):nrow
                     Ktrdprc(minuteK-days(2)+1)=openprice;
                 end
             end
-        elseif reachSS==1 && reachBS==0
+        elseif reachSS==1 && reachBS==0 && (~zeroprc(minuteK))
             BBbuy=(high(minuteK)-BB(daycount-1)>=-tol);
             SEsell=((low(minuteK)-SE(daycount-1)<=tol)&&(trdnum==0));
             BEbuy=0;
@@ -240,7 +241,7 @@ for minuteK=days(2):nrow
     elseif currenthold==1 %long position, hold the position till a break or endtime
         buyprice=(BBbuy*BBbuyprice+BEbuy*BEbuyprice);
         breakprc=tickround(buyprice*(1-breakpct),tick);
-        if (low(minuteK)-breakprc<=tol)   %break
+        if (low(minuteK)-breakprc<=tol) && (~zeroprc(minuteK))  %break
             price=(openprice*(1-overnight)+close(days(daycount)-1)*overnight);
             ind=open(minuteK)<breakprc;
             breakprc=ind*open(minuteK)+(1-ind)*breakprc;
@@ -260,7 +261,7 @@ for minuteK=days(2):nrow
                 pass=1;
                 continue
             end
-            if time(minuteK)==endtime
+            if time(minuteK)==endtime    % in the case of last K gives break signal
                 daycount=daycount+1;
                 trdnum=0;
             end
@@ -285,7 +286,7 @@ for minuteK=days(2):nrow
     elseif currenthold==-1 %short position, hold the position till a break or endtime
         sellprice=(SEsell*SEsellprice+SBsell*SBsellprice);
         breakprc=tickround(sellprice*(1+breakpct),tick);
-        if (high(minuteK)-breakprc>=-tol)  %break
+        if (high(minuteK)-breakprc>=-tol) && (~zeroprc(minuteK)) %break
             price=(openprice*(1-overnight)+close(days(daycount)-1)*overnight);
             ind=open(minuteK)>breakprc;
             breakprc=ind*open(minuteK)+(1-ind)*breakprc;
